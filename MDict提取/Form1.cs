@@ -9,7 +9,8 @@ namespace MDict提取
 {
     public partial class Form1 : Form
     {
-        Thread thread;
+        private Thread thread;
+        private string lastText;
         public Form1()
         {
             InitializeComponent();
@@ -21,15 +22,26 @@ namespace MDict提取
             int counter = 0;
             while (true)
             {
+                if(!User32.IsWindow(hwndMain))
+                {
+                    this.BeginInvoke(new Action(()=> {
+                        MessageBox.Show("MDict已经退出");
+                    }));
+                    break;
+                }
                 counter++;
                 User32.SendMessage(hwndMain, User32.WindowMessage.WM_COMMAND,
                 new IntPtr(1046), IntPtr.Zero);//【下一条】菜单项的id
                 User32.SendMessage(hwndMain, User32.WindowMessage.WM_COMMAND,
                 new IntPtr(1234), IntPtr.Zero);//【拷贝当前内容到粘贴板】菜单项的id
                 string text=null;
-                this.BeginInvoke(new Action(()=> {
-                    text = Clipboard.GetText();//不能在子线程中访问Clipboard
-                    text = Regex.Replace(text, @"\s", "");
+                this.BeginInvoke(new Action(()=> {                    
+                    lastText = text;
+                    text = Regex.Replace(Clipboard.GetText(), @"\s", "");//不能在子线程中访问Clipboard
+                    if (lastText == text)//如果和上次一样，则不处理
+                    {
+                        return;
+                    }
                     File.AppendAllText("d:/data.txt", text + "\r\n");
                     labelCount.Text = counter.ToString();
                     labelMsg.Text = text;
