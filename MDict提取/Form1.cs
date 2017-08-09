@@ -26,6 +26,8 @@ namespace MDict提取
                 {
                     this.BeginInvoke(new Action(()=> {
                         MessageBox.Show("MDict已经退出");
+                        btnExtract.Enabled = true;
+                        btnStop.Enabled = false;
                     }));
                     break;
                 }
@@ -35,13 +37,14 @@ namespace MDict提取
                 User32.SendMessage(hwndMain, User32.WindowMessage.WM_COMMAND,
                 new IntPtr(1234), IntPtr.Zero);//【拷贝当前内容到粘贴板】菜单项的id
                 string text=null;
-                this.BeginInvoke(new Action(()=> {                    
-                    lastText = text;
+                this.BeginInvoke(new Action(()=> {         
+                    
                     text = Regex.Replace(Clipboard.GetText(), @"\s", "");//不能在子线程中访问Clipboard
                     if (lastText == text)//如果和上次一样，则不处理
                     {
                         return;
                     }
+                    lastText = text;
                     File.AppendAllText("d:/data.txt", text + "\r\n");
                     labelCount.Text = counter.ToString();
                     labelMsg.Text = text;
@@ -53,6 +56,11 @@ namespace MDict提取
 
         private void btnExtract_Click(object sender, EventArgs e)
         {
+            if(File.Exists("d:/data.txt") && MessageBox.Show("请先备份d:/data.txt，否则将覆盖，是否继续？",
+                "提示",MessageBoxButtons.YesNo)!= DialogResult.Yes)
+            {
+                return;
+            }
             IntPtr hwndMain = User32.FindWindow("MDictMainWnd", "MDict");
             if (hwndMain.ToInt32()==0)
             {
